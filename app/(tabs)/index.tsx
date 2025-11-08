@@ -1,98 +1,71 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// app/(tabs)/index.tsx
+import React, { useEffect, useState } from "react";
+import { View, FlatList, ActivityIndicator, Button, Alert } from "react-native";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import { API_SQL } from "../../constants/api";
+import PersonajeCard from "../../components/PersonajeCard";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function SQLPersonajes() {
+  const [personajes, setPersonajes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-export default function HomeScreen() {
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(API_SQL);
+      console.log("SQL GET:", res.data);
+      setPersonajes(Array.isArray(res.data) ? res.data : (res.data.data ?? [res.data]));
+    } catch (err) {
+      console.error("Error SQL:", err);
+      if (typeof window !== "undefined") window.alert("Error cargando SQL: " + (err.message || err));
+      else Alert.alert("Error", "No se pudieron cargar los personajes SQL");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePersonaje = async (id) => {
+    // usar window.confirm en navegador, Alert en mobile (fallback)
+    const confirmed = (typeof window !== "undefined")
+      ? window.confirm("¿Deseas eliminar este personaje (SQL)?")
+      : await new Promise((res) => Alert.alert("Eliminar", "¿Deseas eliminar este personaje?", [
+          { text: "Cancelar", style: "cancel", onPress: () => res(false) },
+          { text: "Eliminar", onPress: () => res(true) }
+        ]));
+
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`${API_SQL}/${id}`);
+      fetchData();
+    } catch (err) {
+      console.error("Error eliminando SQL:", err);
+      if (typeof window !== "undefined") window.alert("No se pudo eliminar (SQL)");
+      else Alert.alert("Error", "No se pudo eliminar el personaje (SQL)");
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+
+  
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={{ flex: 1, padding: 16 }}>
+      <Button title="Agregar personaje (SQL)" onPress={() => router.push("/personaje/create?type=sql")} />
+      <FlatList
+        data={personajes}
+        keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
+        renderItem={({ item }) => (
+          <PersonajeCard
+            personaje={item}
+            onEdit={() => router.push(`/personaje/update?id=${item.id}&type=sql`)}
+            onDelete={() => deletePersonaje(item.id)}
+          />
+        )}
+      />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
