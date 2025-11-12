@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, TextInput, Button, Alert } from "react-native";
+import { View, TextInput, Button } from "react-native";
 import axios from "axios";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { API_SQL, API_NOSQL } from "../../constants/api";
@@ -9,22 +9,25 @@ export default function UpdatePersonaje() {
   const router = useRouter();
   const { id, type } = useLocalSearchParams();
 
-  const api = type === "sql" ? API_SQL : API_NOSQL;
+  const api = type === "sql"
+    ? `${API_SQL}/id/${id}` // ✅ SQL obtiene por ID
+    : `${API_NOSQL}/${id}`; // ✅ NoSQL ya usa esta ruta
 
   useEffect(() => {
     axios
-      .get(`${api}/${id}`)
-      .then((res) => setPersonaje(res.data[0] || res.data))
-      .catch(() => window.alert("Error No se pudo cargar el personaje"));
+      .get(api)
+      .then((res) => setPersonaje(res.data))
+      .catch(() => alert("Error al cargar personaje"));
   }, []);
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`${api}/${id}`, personaje);
-      window.alert("Éxito Personaje actualizado correctamente");
+      const updateApi = type === "sql" ? `${API_SQL}/${id}` : `${API_NOSQL}/${id}`;
+      await axios.put(updateApi, personaje);
+      alert("✅ Personaje actualizado");
       router.back();
-    } catch (err) {
-      window.alert("Error No se pudo actualizar el personaje");
+    } catch {
+      alert("Error al actualizar");
     }
   };
 
