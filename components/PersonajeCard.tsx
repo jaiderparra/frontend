@@ -1,21 +1,21 @@
-// components/PersonajeCard.tsx
 import React from "react";
-import { View, Text, Image, Button, StyleSheet } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 
 export default function PersonajeCard({ personaje, onEdit, onDelete }) {
   return (
     <View style={styles.card}>
-      <Image source={{ uri: personaje.imagen }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{personaje.nombre}</Text>
-        <Text>Edad: {personaje.edad}</Text>
-        <Text>Altura: {personaje.altura}</Text>
-        <Text>Peso: {personaje.peso}</Text>
-
-        <View style={styles.buttons}>
-          <Button title="Editar" onPress={() => onEdit(personaje)} />
-          <Button title="Eliminar" color="red" onPress={() => onDelete(personaje.id || personaje._id)} />
-        </View>
+      <Image source={{ uri: personaje.imagen }} style={styles.img} />
+      <Text style={styles.name}>{personaje.nombre}</Text>
+      <Text style={styles.detail}>Edad: {personaje.edad}</Text>
+      <Text style={styles.detail}>Altura: {personaje.altura}</Text>
+      <Text style={styles.detail}>Peso: {personaje.peso}</Text>
+      <View style={styles.row}>
+        <TouchableOpacity style={styles.btnOrange} onPress={onEdit}>
+          <Text style={styles.btnText}>Editar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.btnRed} onPress={onDelete}>
+          <Text style={styles.btnText}>Eliminar</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -23,29 +23,20 @@ export default function PersonajeCard({ personaje, onEdit, onDelete }) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "#111",
+    padding: 15,
+    borderRadius: 12,
     marginVertical: 8,
-    padding: 10,
-    borderRadius: 10,
-    elevation: 3,
+    shadowColor: "#FF6600",
+    shadowOpacity: 0.5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
   },
-  image: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-  },
-  info: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  name: {
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  buttons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 5,
-  },
+  img: { width: "100%", height: 200, borderRadius: 10, marginBottom: 10 },
+  name: { color: "#FF6600", fontSize: 20, fontWeight: "bold" },
+  detail: { color: "#fff", marginBottom: 4 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
+  btnOrange: { backgroundColor: "#FF6600", padding: 8, borderRadius: 8, flex: 1, marginRight: 5 },
+  btnRed: { backgroundColor: "#FF3333", padding: 8, borderRadius: 8, flex: 1, marginLeft: 5 },
+  btnText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
 });
