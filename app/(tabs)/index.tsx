@@ -23,25 +23,29 @@ export default function SQLPersonajes() {
   });
   const [busqueda, setBusqueda] = useState("");
   const [personajeEncontrado, setPersonajeEncontrado] = useState(null);
+  const [editPersonaje, setEditPersonaje] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
 
-  // 🔍 Buscar personaje por nombre (ruta corregida)
+  // 🔍 Buscar personaje por nombre
   const fetchByName = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_SQL}/nombre/${encodeURIComponent(busqueda.trim())}`);
-      console.log("🔍 Resultado búsqueda:", res.data);
-
       if (Array.isArray(res.data) && res.data.length > 0) {
         setPersonajeEncontrado(res.data[0]);
+        setEditPersonaje({ ...res.data[0] });
+        setModoEdicion(false);
       } else {
-        alert("⚠️ No se encontró ningún personaje con ese nombre");
+        window.alert("⚠️ No se encontró ningún personaje con ese nombre");
         setPersonajeEncontrado(null);
+        setEditPersonaje(null);
       }
     } catch (err) {
       console.error("❌ Error al buscar:", err);
-      alert("❌ Personaje no encontrado o error al buscar");
+      window.alert("❌ Personaje no encontrado o error al buscar");
       setPersonajeEncontrado(null);
+      setEditPersonaje(null);
     } finally {
       setLoading(false);
     }
@@ -51,38 +55,43 @@ export default function SQLPersonajes() {
   const crearPersonaje = async () => {
     try {
       await axios.post(API_SQL, personaje);
-      alert("✅ Personaje creado con éxito");
+      window.alert("✅ Personaje creado con éxito");
       setPersonaje({ nombre: "", edad: "", altura: "", peso: "", imagen: "" });
     } catch {
-      alert("❌ Error al crear personaje");
+      window.alert("❌ No se pudo crear el personaje");
     }
   };
 
-  // ✏️ Actualizar personaje encontrado
+  // ✏️ Actualizar personaje
   const actualizarPersonaje = async () => {
     try {
-      await axios.put(`${API_SQL}/${personajeEncontrado.id}`, personajeEncontrado);
-      alert("✅ Personaje actualizado correctamente");
+      await axios.put(`${API_SQL}/${editPersonaje.id}`, editPersonaje);
+      window.alert("✅ Personaje actualizado correctamente");
+      setPersonajeEncontrado(editPersonaje);
+      setModoEdicion(false); // salir del modo edición
     } catch {
-      alert("❌ No se pudo actualizar");
+      window.alert("❌ No se pudo actualizar el personaje");
     }
   };
 
   // 🗑️ Eliminar personaje
   const eliminarPersonaje = async () => {
-    if (!confirm("¿Eliminar este personaje?")) return;
+    const confirmDelete = window.confirm("¿Eliminar este personaje?");
+    if (!confirmDelete) return;
+
     try {
       await axios.delete(`${API_SQL}/${personajeEncontrado.id}`);
       setPersonajeEncontrado(null);
-      alert("🗑️ Personaje eliminado");
+      setEditPersonaje(null);
+      window.alert("🗑️ Personaje eliminado");
     } catch {
-      alert("❌ Error al eliminar");
+      window.alert("❌ No se pudo eliminar el personaje");
     }
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>🎯 CRUD Personajes SQL</Text>
+      <Text style={styles.title}>🎯 CRUD Personajes SQL HUNTERxHUNTER</Text>
 
       {/* 🔎 BUSCAR */}
       <View style={styles.card}>
@@ -102,29 +111,66 @@ export default function SQLPersonajes() {
         {/* Mostrar personaje encontrado */}
         {personajeEncontrado && (
           <View style={styles.resultBox}>
-            <Text style={styles.personajeName}>{personajeEncontrado.nombre}</Text>
-            <Text style={styles.info}>Edad: {personajeEncontrado.edad}</Text>
-            <Text style={styles.info}>Altura: {personajeEncontrado.altura}</Text>
-            <Text style={styles.info}>Peso: {personajeEncontrado.peso}</Text>
+            <Text style={styles.personajeName}>🧍 {personajeEncontrado.nombre}</Text>
 
-            {personajeEncontrado.imagen ? (
-              <Image
-                source={{ uri: personajeEncontrado.imagen }}
-                style={styles.personajeImg}
-                resizeMode="cover"
-              />
+            {/* Mostrar en modo lectura */}
+            {!modoEdicion ? (
+              <>
+                <Text style={styles.info}>Edad: {personajeEncontrado.edad}</Text>
+                <Text style={styles.info}>Altura: {personajeEncontrado.altura}</Text>
+                <Text style={styles.info}>Peso: {personajeEncontrado.peso}</Text>
+                {personajeEncontrado.imagen && (
+                  <Image
+                    source={{ uri: personajeEncontrado.imagen }}
+                    style={styles.personajeImg}
+                    resizeMode="cover"
+                  />
+                )}
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={styles.btnOrange}
+                    onPress={() => setModoEdicion(true)}
+                  >
+                    <Text style={styles.btnText}>Editar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnRed} onPress={eliminarPersonaje}>
+                    <Text style={styles.btnText}>Eliminar</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             ) : (
-              <Text style={styles.info}>Sin imagen</Text>
+              /* Mostrar inputs solo en modo edición */
+              <>
+                {["nombre", "edad", "altura", "peso", "imagen"].map((campo) => (
+                  <TextInput
+                    key={campo}
+                    placeholder={campo}
+                    placeholderTextColor="#888"
+                    value={editPersonaje[campo]?.toString() ?? ""}
+                    onChangeText={(t) => setEditPersonaje({ ...editPersonaje, [campo]: t })}
+                    style={styles.input}
+                  />
+                ))}
+                {editPersonaje.imagen ? (
+                  <Image
+                    source={{ uri: editPersonaje.imagen }}
+                    style={styles.personajeImg}
+                    resizeMode="cover"
+                  />
+                ) : null}
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={styles.btnOrange} onPress={actualizarPersonaje}>
+                    <Text style={styles.btnText}>Actualizar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.btnRed}
+                    onPress={() => setModoEdicion(false)}
+                  >
+                    <Text style={styles.btnText}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
-
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.btnOrange} onPress={actualizarPersonaje}>
-                <Text style={styles.btnText}>Actualizar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btnRed} onPress={eliminarPersonaje}>
-                <Text style={styles.btnText}>Eliminar</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         )}
       </View>
@@ -151,7 +197,7 @@ export default function SQLPersonajes() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", padding: 20 },
+  container: { flex: 1, backgroundColor: "#ffffffff", padding: 20 },
   title: {
     color: "#FF6600",
     fontSize: 24,
@@ -192,10 +238,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 5,
   },
-  btnText: { color: "#fff", fontWeight: "bold" },
-  resultBox: { marginTop: 15, borderTopWidth: 1, borderTopColor: "#333", paddingTop: 15 },
-  personajeName: { color: "#FF6600", fontSize: 18, fontWeight: "bold", marginBottom: 8 },
-  info: { color: "#fff", fontSize: 14, marginBottom: 4 },
+  info: { 
+    color: "#fff", 
+    marginBottom: 5 
+},
+  btnText: { 
+    color: "#ffffffff", 
+    fontWeight: "bold" 
+  },
+  resultBox: { 
+    marginTop: 15, 
+    borderTopWidth: 1, 
+    borderTopColor: "#313131ff", 
+    paddingTop: 15 
+  },
+  personajeName: { color: "#FF6600", 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    marginBottom: 8 
+  },
   personajeImg: {
     width: "100%",
     height: 250,
